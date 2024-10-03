@@ -2,40 +2,28 @@
 
 namespace App\Service;
 
-use DateTime;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 class Calculation extends AbstractController
 {
+    /**
+     * определение суммы скидки
+     * @param int $basedSum
+     * @param string $participantBirth
+     * @param string $travelStartDate
+     * @param string $paymentDate
+     * @return array
+     */
     public function calcDiscount(
         int $basedSum,
         string $participantBirth,
         string $travelStartDate,
         string $paymentDate = null,
     ): array {
-        $newSum = $basedSum;
-
         $age = $this->calcAge($participantBirth, $travelStartDate);
-        switch (true) {
-            case $age < 18 && $age >= 12:
-                $newSum *= 0.9;
-                break;
-            case $age < 12 && $age >= 6:
-                $newSum = $newSum * 0.3 < 4500 ? $newSum * 0.7 : $newSum - 4500;
-                break;
-            case $age < 6 && $age >= 3:
-                $newSum *= 0.2;
-                break;
-            case $age < 3 && $age >= 0:
-                return [
-                    'status' => 200,
-                    'body' => [
-                        'summa' => 0,
-                    ],
-                ];
-        }
 
-        if (is_null($paymentDate)) {
+        $newSum = $this->calcAgeSum($age, $basedSum);
+        if ($newSum === 0 || is_null($paymentDate)) {
             return [
                 'status' => 200,
                 'body' => [
@@ -52,7 +40,6 @@ class Calculation extends AbstractController
         return [
             'status' => 200,
             'body' => [
-                'age' => $age,
                 'summa' => $newSum,
             ],
         ];
@@ -64,12 +51,12 @@ class Calculation extends AbstractController
      * @param string $travelStartDate
      * @return int
      */
-    private function calcAge(string $date, string $travelStartDate): int
+    public function calcAge(string $birthDate, string $travelStartDate): int
     {
         $birth = [
-            'day' => (int) explode('.', $date)[0],
-            'month' => (int) explode('.', $date)[1],
-            'year' => (int) explode('.', $date)[2],
+            'day' => (int) explode('.', $birthDate)[0],
+            'month' => (int) explode('.', $birthDate)[1],
+            'year' => (int) explode('.', $birthDate)[2],
         ];
         $travel = [
             'day' => (int) explode('.', $travelStartDate)[0],
@@ -87,12 +74,37 @@ class Calculation extends AbstractController
     }
 
     /**
+     * вычисление суммы после скидки на ребёнка
+     * @param int $age
+     * @param int $summa
+     * @return float
+     */
+    public function calcAgeSum(int $age, int $summa): float
+    {
+        $newSum = $summa;
+        switch (true) {
+            case $age < 18 && $age >= 12:
+                $newSum *= 0.9;
+                break;
+            case $age < 12 && $age >= 6:
+                $newSum = $newSum * 0.3 < 4500 ? $newSum * 0.7 : $newSum - 4500;
+                break;
+            case $age < 6 && $age >= 3:
+                $newSum *= 0.2;
+                break;
+            case $age < 3 && $age >= 0:
+                $newSum = 0;
+                break;
+        }
+        return $newSum;
+    }
+    /**
      * вычисление размера скидки за раннее бронирование
      * @param string $paymentDate
      * @param string $travelStartDate
      * @return int
      */
-    private function calcBooking(string $paymentDate, string $travelStartDate): int
+    public function calcBooking(string $paymentDate, string $travelStartDate): int
     {
         $payment = [
             'day' => (int) explode('.', $paymentDate)[0],
