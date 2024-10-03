@@ -5,7 +5,7 @@ namespace Tests;
 use App\Service\Calculation;
 use PHPUnit\Framework\TestCase;
 
-class ProjectTest extends TestCase
+class CalculationTest extends TestCase
 {
     public const DATES = [
         [
